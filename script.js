@@ -3,12 +3,12 @@ import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/
 
 let scene, camera, renderer;
 let car;
+let speed = 0.35;
 let score = 0;
-let speed = 0.4;
 
-let forward = false;
-let left = false;
-let right = false;
+let moveForward = false;
+let moveLeft = false;
+let moveRight = false;
 
 let engineSound;
 let engineStarted = false;
@@ -17,9 +17,11 @@ init();
 animate();
 
 function init() {
+  // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87ceeb);
 
+  // Camera
   camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -28,13 +30,15 @@ function init() {
   );
   camera.position.set(0, 4, 10);
 
+  // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.body.appendChild(renderer.domElement);
 
-  // lights
+  // Lights
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
   const sun = new THREE.DirectionalLight(0xffffff, 1);
   sun.position.set(10, 20, 10);
   sun.castShadow = true;
@@ -42,9 +46,10 @@ function init() {
 
   createGround();
   loadCar();
-  createTrees();
   setupControls();
   setupSound();
+
+  window.addEventListener("resize", onWindowResize);
 }
 
 function createGround() {
@@ -88,52 +93,27 @@ function loadCar() {
       car.traverse(obj => {
         if (obj.isMesh) {
           obj.castShadow = true;
-          obj.receiveShadow = true;
         }
       });
 
       scene.add(car);
     },
     undefined,
-    (err) => console.error("CAR LOAD ERROR", err)
+    (err) => console.error("Car load error:", err)
   );
-}
-
-function createTrees() {
-  for (let z = -2000; z < 2000; z += 30) {
-    makeTree(-9, z);
-    makeTree(9, z);
-  }
-}
-
-function makeTree(x, z) {
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2, 0.2, 2),
-    new THREE.MeshStandardMaterial({ color: 0x8b4513 })
-  );
-  trunk.position.set(x, 1, z);
-
-  const leaves = new THREE.Mesh(
-    new THREE.SphereGeometry(1),
-    new THREE.MeshStandardMaterial({ color: 0x228b22 })
-  );
-  leaves.position.set(x, 2.5, z);
-
-  scene.add(trunk);
-  scene.add(leaves);
 }
 
 function setupControls() {
   window.addEventListener("keydown", e => {
-    if (e.key === "w" || e.key === "ArrowUp") forward = true;
-    if (e.key === "a" || e.key === "ArrowLeft") left = true;
-    if (e.key === "d" || e.key === "ArrowRight") right = true;
+    if (e.key === "w" || e.key === "ArrowUp") moveForward = true;
+    if (e.key === "a" || e.key === "ArrowLeft") moveLeft = true;
+    if (e.key === "d" || e.key === "ArrowRight") moveRight = true;
   });
 
   window.addEventListener("keyup", e => {
-    if (e.key === "w" || e.key === "ArrowUp") forward = false;
-    if (e.key === "a" || e.key === "ArrowLeft") left = false;
-    if (e.key === "d" || e.key === "ArrowRight") right = false;
+    if (e.key === "w" || e.key === "ArrowUp") moveForward = false;
+    if (e.key === "a" || e.key === "ArrowLeft") moveLeft = false;
+    if (e.key === "d" || e.key === "ArrowRight") moveRight = false;
   });
 }
 
@@ -154,16 +134,15 @@ function animate() {
   requestAnimationFrame(animate);
 
   if (car) {
-    if (forward) {
+    if (moveForward) {
       car.position.z -= speed;
       score++;
     }
-    if (left) car.position.x -= 0.15;
-    if (right) car.position.x += 0.15;
+    if (moveLeft) car.position.x -= 0.15;
+    if (moveRight) car.position.x += 0.15;
 
-    const camOffset = new THREE.Vector3(0, 4, 10);
-    const targetCam = car.position.clone().add(camOffset);
-    camera.position.lerp(targetCam, 0.08);
+    const camTarget = car.position.clone().add(new THREE.Vector3(0, 4, 10));
+    camera.position.lerp(camTarget, 0.08);
     camera.lookAt(car.position);
 
     if (engineStarted) {
@@ -173,4 +152,10 @@ function animate() {
 
   document.getElementById("score").innerText = score;
   renderer.render(scene, camera);
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 }

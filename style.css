@@ -2,13 +2,16 @@ body {
   margin: 0;
   overflow: hidden;
   font-family: Arial, sans-serif;
-  background: black;
 }
 
 #ui {
-  position: absolute;
+  position: fixed;
   top: 10px;
   left: 10px;
   color: white;
+  background: rgba(0,0,0,0.5);
+  padding: 10px 15px;
+  border-radius: 8px;
   font-size: 18px;
+  z-index: 10;
 }
