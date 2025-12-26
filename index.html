@@ -3,14 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <title>Car Game ULTRA</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      font-family: Arial, sans-serif;
+    }
+
+    #score {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 20px;
+      z-index: 10;
+    }
+  </style>
 </head>
 <body>
 
-<div id="ui">
-  Score: <span id="score">0</span>
-</div>
+  <div id="score">0</div>
 
-<script type="module" src="script.js"></script>
+  <!-- IMPORTANT: type="module" -->
+  <script type="module" src="./script.js"></script>
+
 </body>
 </html>

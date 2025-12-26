@@ -2,14 +2,14 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.m
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js";
 
 let scene, camera, renderer;
-let car = null;
+let car;
+
+let speed = 0.4;
+let score = 0;
 
 let moveForward = false;
 let moveLeft = false;
 let moveRight = false;
-
-let speed = 0.25;
-let score = 0;
 
 let engineSound;
 let engineStarted = false;
@@ -18,11 +18,11 @@ init();
 animate();
 
 function init() {
-  // SCENE
+  // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87ceeb);
 
-  // CAMERA
+  // Camera
   camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -31,13 +31,13 @@ function init() {
   );
   camera.position.set(0, 4, 10);
 
-  // RENDERER
+  // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.body.appendChild(renderer.domElement);
 
-  // LIGHTS
+  // Lights
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
   const sun = new THREE.DirectionalLight(0xffffff, 1);
@@ -45,57 +45,66 @@ function init() {
   sun.castShadow = true;
   scene.add(sun);
 
-  // GROUND
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(500, 5000),
-    new THREE.MeshStandardMaterial({ color: 0x333333 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.receiveShadow = true;
-  scene.add(ground);
-
+  createGround();
   loadCar();
   setupControls();
   setupSound();
 
-  window.addEventListener("resize", onResize);
+  window.addEventListener("resize", onWindowResize);
+}
+
+function createGround() {
+  const loader = new THREE.TextureLoader();
+
+  const roadTex = loader.load("./textures/road.jpg");
+  roadTex.wrapS = roadTex.wrapT = THREE.RepeatWrapping;
+  roadTex.repeat.set(1, 200);
+
+  const grassTex = loader.load("./textures/grass.jpg");
+  grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping;
+  grassTex.repeat.set(50, 50);
+
+  const road = new THREE.Mesh(
+    new THREE.PlaneGeometry(10, 8000),
+    new THREE.MeshStandardMaterial({ map: roadTex })
+  );
+  road.rotation.x = -Math.PI / 2;
+  road.receiveShadow = true;
+  scene.add(road);
+
+  const grass = new THREE.Mesh(
+    new THREE.PlaneGeometry(300, 8000),
+    new THREE.MeshStandardMaterial({ map: grassTex })
+  );
+  grass.rotation.x = -Math.PI / 2;
+  grass.position.y = -0.01;
+  scene.add(grass);
 }
 
 function loadCar() {
   const loader = new GLTFLoader();
 
   loader.load(
-    "models/supercar.glb",
+    "./models/supercar.glb",
     (gltf) => {
       car = gltf.scene;
-      car.scale.set(0.8, 0.8, 0.8);
-      car.position.set(0, 0.3, 0);
+      car.scale.set(1.2, 1.2, 1.2);
       car.rotation.y = Math.PI;
+      car.position.set(0, 0.2, 0);
 
-      car.traverse((obj) => {
+      car.traverse(obj => {
         if (obj.isMesh) {
           obj.castShadow = true;
         }
       });
 
       scene.add(car);
-      console.log("✅ GLB car loaded");
     },
     undefined,
-    (error) => {
-      console.warn("❌ GLB failed — using box car", error);
-      createBoxCar();
+    (err) => {
+      console.error("❌ Car failed to load:", err);
     }
   );
-}
-
-function createBoxCar() {
-  const geometry = new THREE.BoxGeometry(1.8, 0.6, 3.5);
-  const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-  car = new THREE.Mesh(geometry, material);
-  car.position.set(0, 0.3, 0);
-  car.castShadow = true;
-  scene.add(car);
 }
 
 function setupControls() {
@@ -113,13 +122,13 @@ function setupControls() {
 }
 
 function setupSound() {
-  engineSound = new Audio("sounds/engine.mp3");
+  engineSound = new Audio("./sounds/engine.mp3");
   engineSound.loop = true;
   engineSound.volume = 0.5;
 
   window.addEventListener("click", () => {
     if (!engineStarted) {
-      engineSound.play().catch(() => {});
+      engineSound.play();
       engineStarted = true;
     }
   });
@@ -133,25 +142,23 @@ function animate() {
       car.position.z -= speed;
       score++;
     }
-    if (moveLeft) car.position.x -= 0.15;
-    if (moveRight) car.position.x += 0.15;
+    if (moveLeft) car.position.x -= 0.2;
+    if (moveRight) car.position.x += 0.2;
 
     const camTarget = car.position.clone().add(new THREE.Vector3(0, 4, 10));
-    camera.position.lerp(camTarget, 0.1);
+    camera.position.lerp(camTarget, 0.08);
     camera.lookAt(car.position);
 
     if (engineStarted) {
-      engineSound.playbackRate = 1 + speed * 2;
+      engineSound.playbackRate = 1 + speed * 1.5;
     }
   }
 
-  const scoreEl = document.getElementById("score");
-  if (scoreEl) scoreEl.innerText = score;
-
+  document.getElementById("score").innerText = score;
   renderer.render(scene, camera);
 }
 
-function onResize() {
+function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
